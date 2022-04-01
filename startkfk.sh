@@ -56,28 +56,35 @@ sudo nslookup $SERVER
 
 echo -e "\n********* creating krb5.conf ******** \n"
 
-sudo rm /etc/krb5.conf
+sudo rm -rf /etc/krb5.conf
 sudo touch /etc/krb5.conf
 sudo chmod 777 /etc/krb5.conf
 sudo echo -e "[libdefaults]\n\tdefault_realm = $REALM\n\n[realms]\n\t$REALM = {\n\tkdc = $SERVER\n\tadmin_server = $SERVER\n}" >> /etc/krb5.conf
 
 echo -e "\n********* creating kdc.conf ******** \n"
+sudo chmod 777 /var/log
+sudo touch /var/log/krb5kdc.log
+sudo chmod 777 /var/log/krb5kdc.log
 
 sudo mkdir -p /etc/krb5kdc/
 sudo chmod 777 /etc/krb5kdc
 
-sudo rm /etc/krb5kdc/kdc.conf
+sudo rm -rf /etc/krb5kdc/kdc.conf
 sudo touch /etc/krb5kdc/kdc.conf
 sudo chmod 777 /etc/krb5kdc/kdc.conf
 
 sudo echo -e "[kdcdefaults]\n\tkdc_listen = 78\n\tkdc_tcp_listen = 78\n\n[realms]\n\t$REALM = {\n\t\tkadmind_port = 749\n\t\tmax_life = 12h 0m 0s\n\t\tmax_renewable_life = 7d 0h 0m 0s\n\t\tmaster_key_type = aes256-cts\n\t\tsupported_enctypes = aes256-cts:normal aes128-cts:normal\n\t}\n\n[logging]\n\tkdc = FILE:/var/log/krb5kdc.log\n\tadmin_server = FILE:/var/log/kadmin.log\n\tdefault = FILE:/var/log/krb5lib.log" >> /etc/krb5kdc/kdc.conf
 
-echo -e "\n********* creating realm ******** \n"
+echo -e "\n********* creating master key ******** \n"
+
+sudo rm -rf /var/lib/krb5kdc/principal
+sudo chmod 777 /var/lib/krb5kdc
+sudo chmod 777 /var/lib/krb5kdc/principal
 
 sudo kdb5_util create -r $REALM -s -P password
 
 echo -e "\n********* adding principal  ******** \n"
- 
+sudo rm -rf /etc/security/keytabs 
 sudo mkdir /etc/security/keytabs
 sudo chmod 777 /etc/security/keytabs
 
@@ -85,6 +92,10 @@ sudo kadmin.local -q "addprinc -pw password kafka/kafka@$REALM"
 sudo kadmin.local -q "ktadd -k /etc/security/keytabs/kafka.keytab kafka/kafka@$REALM"
 sudo klist -kte /etc/security/keytabs/kafka.keytab
 
+echo -e "\n********* starting krb services  ******** \n"
+
+sudo krb5kdc restart
+sudo kadmin restart
 
 echo -e "\n********* DONE  ******** \n"
 
