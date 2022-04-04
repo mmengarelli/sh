@@ -49,6 +49,16 @@ echo -e "\n****** Not starting kafka or zookeeper ***** \n"
 # sudo $KAFKA_HOME/bin/zookeeper-server-start.sh $KAFKA_HOME/config/zookeeper.properties &
 # sudo $KAFKA_HOME/bin/kafka-server-start.sh $KAFKA_HOME/config/server.properties &
 
+echo -e "\n********* installing Kerberos components ******** \n"
+
+# Remove any existing Krb services
+sudo apt -qq remove -y krb5-kdc krb5-admin-server krb5-user
+
+sudo rm -rf /var/lib/krb5kdc/*
+
+# Remove any existing Krb services
+sudo apt -qq remove -y krb5-kdc krb5-admin-server krb5-user
+
 sudo apt -qq install -y ldap-utils
 sudo apt -qq install -y krb5-kdc krb5-admin-server krb5-user
 
@@ -62,9 +72,8 @@ sudo chmod 777 /etc/krb5.conf
 sudo echo -e "[libdefaults]\n\tdefault_realm = $REALM\n\n[realms]\n\t$REALM = {\n\tkdc = $SERVER\n\tadmin_server = $SERVER\n}" >> /etc/krb5.conf
 
 echo -e "\n********* creating kdc.conf ******** \n"
+sudo rm -rf /var/log/k*.log
 sudo chmod 777 /var/log
-sudo touch /var/log/krb5kdc.log
-sudo chmod 777 /var/log/krb5kdc.log
 
 sudo mkdir -p /etc/krb5kdc/
 sudo chmod 777 /etc/krb5kdc
@@ -76,10 +85,6 @@ sudo chmod 777 /etc/krb5kdc/kdc.conf
 sudo echo -e "[kdcdefaults]\n\tkdc_listen = 78\n\tkdc_tcp_listen = 78\n\n[realms]\n\t$REALM = {\n\t\tkadmind_port = 749\n\t\tmax_life = 12h 0m 0s\n\t\tmax_renewable_life = 7d 0h 0m 0s\n\t\tmaster_key_type = aes256-cts\n\t\tsupported_enctypes = aes256-cts:normal aes128-cts:normal\n\t}\n\n[logging]\n\tkdc = FILE:/var/log/krb5kdc.log\n\tadmin_server = FILE:/var/log/kadmin.log\n\tdefault = FILE:/var/log/krb5lib.log" >> /etc/krb5kdc/kdc.conf
 
 echo -e "\n********* creating master key ******** \n"
-
-sudo rm -rf /var/lib/krb5kdc/principal
-sudo chmod 777 /var/lib/krb5kdc
-sudo chmod 777 /var/lib/krb5kdc/principal
 
 sudo kdb5_util create -r $REALM -s -P password
 
@@ -98,5 +103,4 @@ sudo krb5kdc restart
 sudo kadmin restart
 
 echo -e "\n********* DONE  ******** \n"
-
 
