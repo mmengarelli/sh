@@ -2,7 +2,8 @@
 
 if [[ "$1" = "" ]]; then
     echo "Please specify server domain in lower case"
-    exit
+    echo "Example: ./inst_kfk_krb.sh kafkaadmin.centralus.cloudapp.azure.com"
+   exit
 fi
 
 server=$1
